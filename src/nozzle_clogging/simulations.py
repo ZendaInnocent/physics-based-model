@@ -57,7 +57,7 @@ def generate_lhs_samples(n_samples, seed):
     """Generate Latin Hypercube samples across the sprinkler clogging parameter space."""
     rng = np.random.default_rng(seed)
 
-    sampler = qmc.LatinHypercube(d=5, scramble=True, seed=seed)
+    sampler = qmc.LatinHypercube(d=5, scramble=True, rng=seed)
     lhs = sampler.random(n_samples)
 
     TSS = PARAM_RANGES["TSS"][0] + lhs[:, 0] * (
