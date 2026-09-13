@@ -1,105 +1,41 @@
-"""
-Nozzle Clogging Model
+"""Nozzle clogging model.
 
-A physics-based Monte Carlo simulation framework for assessing
-sprinkler nozzle clogging risk from sediment-laden irrigation water.
+This module implements the Monte Carlo-Enhanced Physics-Based Modeling of
+Sediment-Induced Clogging Risk in Semi-Solid Set Sprinkler Irrigation Systems.
+
+The model provides:
+1. Uncertainty quantification via Monte Carlo simulation
+2. Physics-based sediment transport and clogging mechanisms
+3. Risk assessment and classification for agricultural irrigation systems
 
 Key features:
-- Dimensionless clogging potential index from Buckingham π analysis
-- Latin Hypercube sampling (20,000 samples)
-- Four physical modifiers: Stokes, dp/Dn, velocity shear, settling
-- Logistic probability mapping (γ=1.0, x₀=3.0 for manuscript alignment)
-- Saltelli Sobol sensitivity analysis
-- Full unit-aware calculations with pint
-- Schema validation with pandera + beartype
+- Support for semi-solid set sprinkler systems (latersections moved periodically)
+- Regime switching based on operational boundaries
+- Comprehensive sensitivity and convergence analysis
+- Document-grounded academic readiness for publication
+
+Unit System:
+- All calculations use SI units with pint Quantity support
+- Temperature: °C, Pressure: kPa, Length: mm, Velocity: m/s
+- Volume fraction and dimensionless indices for modeling convenience
+
+Module Structure:
+- config: Physical constants and simulation parameters
+- physics: Core clogging physics calculations
+- probability: Risk assessment and probability calculations
+- generation: Latin Hypercube sampling and parameter generation
+- orchestration: Pipeline coordination and model integration
+- schemas: Data validation and unit-aware schemas
+- simulation: Batched simulation execution and result aggregation
+
+Workflow:
+1. Generate input parameters (LHS sampling)
+2. Compute physics parameters (Stokes number, shear factors, etc.)
+3. Calculate clogging probability using physics-based dimensionless indices
+4. Classify risk levels (Low/Moderate/High)
+5. Perform comprehensive sensitivity and convergence analysis
+
+This module provides a robust foundation for sediment-induced clogging risk
+assessment in pressurized irrigation systems, with applications in sustainable
+agricultural water management and crop yield optimization.
 """
-
-from nozzle_clogging.config import (
-    LOGISTIC_SCALE,
-    CENTERING_OFFSET,
-    PARAM_RANGES,
-    PARTICLE_SIZE_RANGES,
-    PhysicsConstants,
-    RANDOM_SEED,
-)
-from nozzle_clogging.generation import (
-    compute_lognormal_params,
-    generate_lhs_samples,
-    generate_simulation_inputs,
-    generate_vectorized_lognormal_particle_sizes,
-)
-from nozzle_clogging.orchestration import (
-    compute_and_classify_clogging_probability,
-    compute_physics,
-    run_batched,
-    to_pint_array,
-    to_quantity,
-)
-from nozzle_clogging.physics import (
-    calculate_dp_dn_ratio_and_factor,
-    calculate_physical_modifiers,
-    calculate_settling_velocity_and_factor,
-    calculate_shields_critical_velocity,
-    calculate_stokes_factor,
-    calculate_stokes_number,
-    calculate_velocity_from_pressure,
-    calculate_velocity_shear_factor,
-)
-from nozzle_clogging.probability import (
-    calculate_clogging_probability,
-    calculate_risk_proportions,
-    classify_clogging_risk,
-    run_calibration_sensitivity_sweep,
-)
-from nozzle_clogging.schemas import (
-    PhysicsComputedSchema,
-    SimulationInputSchema,
-    SimulationOutputSchema,
-)
-from nozzle_clogging.simulation import run_simulation
-from nozzle_clogging.units import ureg
-
-__all__ = [
-    # Config
-    'LOGISTIC_SCALE',
-    'CENTERING_OFFSET',
-    'PARAM_RANGES',
-    'PARTICLE_SIZE_RANGES',
-    'PhysicsConstants',
-    'RANDOM_SEED',
-    # Units
-    'ureg',
-    # Generation
-    'compute_lognormal_params',
-    'generate_lhs_samples',
-    'generate_simulation_inputs',
-    'generate_vectorized_lognormal_particle_sizes',
-    # Physics
-    'calculate_dp_dn_ratio_and_factor',
-    'calculate_physical_modifiers',
-    'calculate_settling_velocity_and_factor',
-    'calculate_shields_critical_velocity',
-    'calculate_stokes_factor',
-    'calculate_stokes_number',
-    'calculate_velocity_from_pressure',
-    'calculate_velocity_shear_factor',
-    # Probability
-    'calculate_clogging_probability',
-    'calculate_risk_proportions',
-    'classify_clogging_risk',
-    'run_calibration_sensitivity_sweep',
-    # Schemas
-    'PhysicsComputedSchema',
-    'SimulationInputSchema',
-    'SimulationOutputSchema',
-    # Orchestration
-    'compute_and_classify_clogging_probability',
-    'compute_physics',
-    'run_batched',
-    'to_pint_array',
-    'to_quantity',
-    # Simulation
-    'run_simulation',
-]
-
-__version__ = '0.2.0'

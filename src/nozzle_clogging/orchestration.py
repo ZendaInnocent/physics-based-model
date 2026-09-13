@@ -46,16 +46,7 @@ __all__ = [
 def to_quantity(series: pd.Series) -> pint.Quantity[Any]:
     """Extract a pint.Quantity from a PintArray-backed Series."""
     if isinstance(series, pd.Series) and hasattr(series, 'pint'):
-        qty = series.pint.quantity
-        # Ensure it uses the shared registry
-        from nozzle_clogging.units import ureg
-        if hasattr(qty, 'to'):
-            # Convert to ureg if different registry
-            try:
-                qty = qty.to(ureg)
-            except:
-                pass
-        return qty
+        return series.pint.quantity
     raise TypeError(f'Expected PintArray Series, got {type(series)}')
 
 

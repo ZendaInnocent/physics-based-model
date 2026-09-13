@@ -26,7 +26,7 @@ __all__ = [
 def calculate_velocity_from_pressure(
     pressure_kpa: pint.Quantity[Any],
     cd: float = config.CD,
-    rho: pint.Quantity[Any] | None = None,
+    rho: pint.Quantity[Any] = config.PhysicsConstants.RHO_WATER,
 ) -> pint.Quantity[Any]:
     """Calculate exit velocity from nozzle pressure.
 
@@ -43,14 +43,6 @@ def calculate_velocity_from_pressure(
     Raises:
         DimensionalityError: If pressure or rho have incompatible units.
     """
-    if rho is None:
-        rho = config.PhysicsConstants.RHO_WATER
-    # Ensure both quantities use the same registry
-    if hasattr(rho, 'to'):
-        try:
-            rho = rho.to(pressure_kpa.units.get_registry())
-        except:
-            pass
     v = cd * np.sqrt((2 * pressure_kpa.to('Pa')) / rho)
     return v.to('m/s')
 
@@ -87,8 +79,7 @@ def calculate_physical_modifiers(
     physical_factor = (
         dp_dn_factor * stokes_factor * velocity_shear_factor * settling_velocity_factor
     )
-    # Manuscript bounds: [0.1, 5.0]
-    return np.clip(physical_factor, 0.1, 5.0)
+    return np.clip(physical_factor, 0.5, 10.0)
 
 
 def calculate_stokes_number(
@@ -157,11 +148,10 @@ def calculate_stokes_factor(
     )
 
     # Allow factor to exceed 1.0 for high inertia conditions
-    # Manuscript bounds: [0.3, 1.5]
     return np.where(  # type: ignore
         velocity_m_s <= ureg.Quantity(0, 'm/s'),
         ureg.Quantity(1.0, 'dimensionless'),
-        np.clip(factor, 0.3, 1.5),
+        np.clip(factor, 0.5, 2.0),
     )
 
 
@@ -201,8 +191,7 @@ def calculate_dp_dn_ratio_and_factor(
         1.0 + 0.8 * np.log1p(ratio / dp_dn_obstruction_threshold),
     )
 
-    # Manuscript bounds: [0.5, 2.0]
-    return ratio, np.clip(factor, 0.5, 2.0)
+    return ratio, np.clip(factor, 0.5, 2.5)
 
 
 def calculate_velocity_shear_factor(
@@ -214,13 +203,14 @@ def calculate_velocity_shear_factor(
 ) -> pint.Quantity[Any]:
     """Calculate multiplicative factor based on velocity shear threshold.
 
-    Above velocity_shear_threshold (default 12 m/s for manuscript alignment),
-    shear stress prevents deposition. Uses exponential decay:
-    - phi_V = 1.0 for V <= V_th
-    - phi_V = exp(-k * (V - V_th)) for V > V_th
+    Above velocity_shear_threshold (default 8 m/s), shear stress prevents
+    deposition. Uses smooth transition to avoid discontinuity.
 
-    where k is chosen so phi_V falls from 1.0 to min_factor over 12 m/s
-    (i.e., at V = V_th + 12, phi_V = min_factor).
+    Note: For typical irrigation pressures (100-400 kPa), velocities range
+    12-24 m/s, which all exceed the 8 m/s threshold. This function therefore
+    returns values in the high-velocity regime where self-cleaning dominates.
+    The factor provides decreasing protection as velocity increases further
+    (diminishing returns on cleaning).
 
     Args:
         velocity_m_s: Velocity as pint Quantity.
@@ -236,16 +226,19 @@ def calculate_velocity_shear_factor(
     v = velocity_m_s.to('m/s')
     v_thresh = velocity_shear_threshold.to('m/s')
 
-    # Decay constant: at V = V_th + 12 m/s, phi_V = min_factor
-    # exp(-k * 12) = min_factor => k = -ln(min_factor) / 12
-    k = -np.log(min_factor) / 12.0
+    # Below threshold: rapid increase in clogging risk
+    # Above threshold: gradual decrease (high-velocity regime provides
+    # diminishing additional benefit beyond the threshold)
+    ratio = v / v_thresh
 
-    # Exponential decay above threshold
-    delta_v = (v - v_thresh).magnitude
+    # Linear rise below threshold, gentle logarithmic decline above
+    # At ratio=1 (v=8): factor ~1.0
+    # At ratio=1.5 (v=12): factor ~0.94
+    # At ratio=3 (v=24): factor ~0.84
     factor = np.where(
-        delta_v <= 0,
-        1.0,
-        np.exp(-k * delta_v)
+        ratio < 1.0,
+        0.5 + 0.5 * ratio,  # Rise from 0.5 to 1.0 as v approaches threshold
+        1.0 - 0.15 * np.log1p(ratio - 1.0),  # Gradual decline above threshold
     )
 
     # Ensure minimum factor
@@ -370,9 +363,8 @@ def calculate_settling_velocity_and_factor(
     if np.any(v <= ureg.Quantity(0, 'm/s')):
         settling_velocity_factor = ureg.Quantity(np.array(1.0), 'dimensionless')
     else:
-        # Manuscript bounds: [0.2, 2.0]
         settling_velocity_factor = ureg.Quantity(
-            np.clip(factor, 0.2, 2.0), 'dimensionless'
+            np.clip(factor, 0.5, 2.0), 'dimensionless'
         )
 
     return ureg.Quantity(settling_velocity.magnitude, 'm/s'), settling_velocity_factor

@@ -1,5 +1,5 @@
-from nozzle_clogging.simulations import simulate_nozzle_clogging
+from nozzle_clogging.simulation import run_simulation
 
-results = simulate_nozzle_clogging()
+results = run_simulation()
 
-print(results)
+print(results.head())

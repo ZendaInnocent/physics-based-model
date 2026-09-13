@@ -18,3 +18,10 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff.lint]
+# Enable the isort (I) rule category
+select = ["E", "F", "I"]
+
+[tool.ruff.format]
+quote-style = "single"

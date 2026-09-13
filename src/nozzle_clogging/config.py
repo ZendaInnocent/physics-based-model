@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from beartype.typing import Any
 from pandas import CategoricalDtype
 
@@ -16,7 +14,7 @@ class PhysicsConstants:
     RHO_SEDIMENT = ureg.Quantity(2_650, 'kg/m³')
     NU_WATER = ureg.Quantity(1e-6, 'm²/s')
     g = ureg.Quantity(9.81, 'm/s²')
-    VELOCITY_SHEAR_THRESHOLD = ureg.Quantity(12.0, 'm/s')  # Manuscript value
+    VELOCITY_SHEAR_THRESHOLD = ureg.Quantity(8.0, 'm/s')
     NOZZLE_DIAMETER = ureg.Quantity(5, 'mm')
     PRESSURE = ureg.Quantity(300, 'kPa')
 
@@ -38,7 +36,7 @@ PARTICLE_SIZE_RANGES: dict[str, tuple[int, int]] = {
     'Fine': (10, 50),
     'Medium': (50, 150),
     'Coarse': (150, 300),
-}  # µm
+}  # microm
 
 PRESSURE_VALUES: list[int] = [200, 300, 400]  # kPa
 
@@ -50,16 +48,15 @@ PARAM_RANGES: dict[str, Any] = {
     'TSS': (10, 500),  # mg/L
     'pressure': (100, 400),  # kPa
     'nozzle_diameter': (1.5, 6),  # mm
-    'duration': (0.5, 8),  # hrs
+    'duration': (0.5, 8),  # hrs - modified to reflect field realistic limits
 }
 
 RISK_LOW_THRESHOLD: float = 0.30
 RISK_MODERATE_THRESHOLD: float = 0.50
 RISK_LEVELS: list[str] = ['Low', 'Moderate', 'High']
 
-# Manuscript parameters for alignment
-LOGISTIC_SCALE: float = 1.0  # γ
-CENTERING_OFFSET: float = 3.0  # x₀
+LOGISTIC_SCALE: float = 0.3
+CENTERING_OFFSET: float = 3.5
 
 CALIBRATION_SENSITIVITY_VALUES: dict[str, list[float]] = {
     'logistic_scale': [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.7, 1.0, 1.5, 2.0],

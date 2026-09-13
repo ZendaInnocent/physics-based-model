@@ -91,10 +91,6 @@ class PhysicsComputedSchema(SimulationInputSchema):
         to match the expected unit.
     """
 
-    velocity_m_s: Series[PanderaPintDtype] = pa.Field(
-        dtype_kwargs={'units': 'meter / second'},
-        description='Flow velocity in m/s',
-    )
     stokes_number: Series[PanderaPintDtype] = pa.Field(
         dtype_kwargs={'units': 'dimensionless'},
         description='Stokes number (dimensionless)',
